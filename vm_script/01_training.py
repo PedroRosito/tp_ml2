@@ -32,11 +32,12 @@ if len(list_mlflow_experiments):
 
     mlflow.create_experiment(str(new_experiment_id))
 
-df_heart = pd.read_csv("/heart_failure_clinical_records_dataset.csv")
+df_heart = pd.read_csv("heart_failure_clinical_records_dataset.csv")
 
 features = [
     'age', 'ejection_fraction', 'serum_creatinine', 'serum_sodium', 'time']
 x = df_heart[features]
+x = x[features].to_numpy()
 y = df_heart["DEATH_EVENT"]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2,
                                                     random_state=2)
