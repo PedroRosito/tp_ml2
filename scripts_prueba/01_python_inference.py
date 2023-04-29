@@ -17,7 +17,7 @@ def parse_request(request):
     event_id = request.pop('event_id') if 'event_id' in request else 'no_event_id'
 
     features = request["data"]
-    assert len(features) == 4, 'The request must have the correct ammount of columns (At least)'
+    assert len(features) == 5, 'The request must have the correct ammount of columns (At least)'
 
     return event_id, features
 
@@ -36,9 +36,11 @@ def save_predictions(event_id, prediction):
 def externalized_model(features) -> str:
     headers = {}
 
-    json_request = {'dataframe_split': {'data':[features]}}
+    json_request = {'dataframe_split': {'data': [features]}}
 
-    response = requests.post(f'http://{vm_ip}:{vm_port}/invocations', headers=headers, json=json_request)
+    response = requests.post(
+        f'http://{vm_ip}:{vm_port}/invocations', headers=headers,
+        json=json_request)
     response = response.json()["predictions"]
 
     return response[0]
@@ -49,14 +51,18 @@ def check_business_logic(features):
     Here We should put some business logic
     We're going to put the min/max of the iris dataset features
     """
-    sepal_length, sepal_width, petal_length, petal_width = features
+    age, ejection_fraction, serum_creatinine, serum_sodium, time = features
 
-    sepal_length_condition = (4.3 <= sepal_length) and (sepal_length <= 7.9)
-    sepal_width_condition = (2.0 <= sepal_width) and (sepal_width <= 4.4)
-    petal_length_condition = (1.0 <= petal_length) and (petal_length <= 6.9)
-    petal_width_condition = (0.1 <= petal_width) and (petal_width <= 2.5)
+    age_condition = (0 <= age) and (age <= 100)
+    ejection_fraction_condition = (10.0 <= ejection_fraction) and (ejection_fraction <= 90)
+    serum_creatinine_condition = (0 <= serum_creatinine) and (serum_creatinine <= 10)
+    serum_sodium_condition = (110 <= serum_sodium) and (serum_sodium <= 150)
+    time_condition = (0 <= time) and (time <= 300)
 
-    return not (sepal_length_condition and sepal_width_condition and petal_length_condition and petal_width_condition)
+    return not (
+        age_condition and ejection_fraction_condition and
+        serum_creatinine_condition and serum_sodium_condition
+        and time_condition)
 
 
 def get_business_prediction(features):
@@ -72,8 +78,8 @@ def trigger_events(request):
     # This is to work inside the lambda fn
     event_id, features = parse_request(request)
 
-    # if check_business_logic(features):
-    #     prediction = get_business_prediction(features)
+    if check_business_logic(features):
+        prediction = get_business_prediction(features)
 
     prediction = externalized_model(features)
 
@@ -83,11 +89,11 @@ def trigger_events(request):
 
 
 print(trigger_events(
-   {"event_id": "17cfe7d5-3cdb-4e62-861d-0371b79f16f2", "data": [0, 0, 0, 0]}
+   {"event_id": "17cfe7d5-3cdb-4e62-861d-0371b79f16f2", "data": [75, 20, 1.9, 130, 4]}
 ))
 
 print(trigger_events(
-   {"event_id": "e1a9d8f8-d553-4b97-83ab-37cd9c73c1fc", "data": [5.1, 3.5, 1.4, 0.2]}
+   {"event_id": "e1a9d8f8-d553-4b97-83ab-37cd9c73c1fc", "data": [49, 30, 1, 138, 12]}
 ))
 
 
